@@ -16,4 +16,8 @@ jobs:
       - uses: actions/checkout@v6
       - name: 'Primer proceso'
         run: echo "Hello worls"
+      - name: Dime la fecha
+        run: date
+      - name: Muestra el contenido de directorio
+        run: ls -la
     
