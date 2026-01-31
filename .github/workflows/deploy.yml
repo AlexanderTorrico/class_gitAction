@@ -1,0 +1,23 @@
+name: Crear archivo con fecha y hora en servidor
+
+on:
+  workflow_dispatch:  # Manual
+  push:
+    branches: [ main ]  # O la rama que tú quieras
+
+jobs:
+  crear-archivo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ejecutar comando SSH para crear archivo con fecha y hora
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            FECHA=$(date '+%Y-%m-%d_%H-%M-%S')
+            touch "/home/${USER}/archivo_$FECHA.txt"
+            echo "Archivo creado: archivo_$FECHA.txt"
