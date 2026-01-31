@@ -1,0 +1,48 @@
+# =============================================================================
+# WORKFLOW: Crear archivo de prueba con fecha y hora
+# =============================================================================
+# Este workflow se conecta a un servidor principal y luego salta a una VM
+# interna para crear un archivo con la fecha y hora actual.
+#
+# Arquitectura de conexión:
+#   GitHub Actions → Servidor Principal (SSH_HOST) → VM (192.168.1.21)
+#
+# Secrets requeridos:
+#   - SSH_HOST: IP o dominio del servidor principal
+#   - SSH_PORT: Puerto SSH (normalmente 22)
+#   - SSH_USER: Usuario para conectarse (merx)
+#   - SSH_PASSWORD: Contraseña del usuario
+# =============================================================================
+
+name: Test - Crear archivo
+
+on:
+  push:
+    branches: [ "main" ]  # Se ejecuta en push a main
+  workflow_dispatch:       # Permite ejecución manual
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Crear archivo con fecha y hora en VM
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          SSH_VM_PASS: ${{ secrets.SSH_PASSWORD }}  # Contraseña para la VM
+          SSH_VM_USER: ${{ secrets.SSH_USER }}      # Usuario para la VM
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          envs: SSH_VM_PASS,SSH_VM_USER  # Pasa las variables al servidor
+          script: |
+            # Conectar a la VM interna y ejecutar comandos
+            /usr/bin/sshpass -p "$SSH_VM_PASS" ssh -o StrictHostKeyChecking=no $SSH_VM_USER@192.168.1.21 << 'EOF'
+              cd /home/aziende/web/dev.aziende.us/public_html
+              FECHA=$(date '+%Y-%m-%d_%H-%M-%S')
+              echo "Archivo creado en: $(date)" > test_$FECHA.txt
+              echo "✓ Archivo creado: test_$FECHA.txt"
+              ls -la
+            EOF

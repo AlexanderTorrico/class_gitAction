@@ -1,20 +1,24 @@
 # =============================================================================
-# WORKFLOW: Crear archivo de prueba con fecha y hora
+# WORKFLOW: Deploy de archivos a servidor
 # =============================================================================
-# Este workflow se conecta a un servidor principal y luego salta a una VM
-# interna para crear un archivo con la fecha y hora actual.
+# Este workflow copia los archivos del repositorio a una VM interna.
 #
 # Arquitectura de conexión:
 #   GitHub Actions → Servidor Principal (SSH_HOST) → VM (192.168.1.21)
 #
+# Flujo:
+#   1. Checkout del repositorio
+#   2. Copiar archivos al servidor principal via SCP
+#   3. Desde el servidor principal, copiar a la VM interna
+#
 # Secrets requeridos:
 #   - SSH_HOST: IP o dominio del servidor principal
 #   - SSH_PORT: Puerto SSH (normalmente 22)
-#   - SSH_USER: Usuario para conectarse (merx)
+#   - SSH_USER: Usuario para conectarse
 #   - SSH_PASSWORD: Contraseña del usuario
 # =============================================================================
 
-name: Test - Crear archivo
+name: Deploy a servidor
 
 on:
   push:
@@ -22,27 +26,46 @@ on:
   workflow_dispatch:       # Permite ejecución manual
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Crear archivo con fecha y hora en VM
-        uses: appleboy/ssh-action@v1.2.0
-        env:
-          SSH_VM_PASS: ${{ secrets.SSH_PASSWORD }}  # Contraseña para la VM
-          SSH_VM_USER: ${{ secrets.SSH_USER }}      # Usuario para la VM
+      # Paso 1: Descargar el código del repositorio
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # Paso 2: Copiar archivos al servidor principal
+      - name: Copiar archivos al servidor principal
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
-          envs: SSH_VM_PASS,SSH_VM_USER  # Pasa las variables al servidor
+          source: "index.html,script.js,styles.css,procesos/"
+          target: "/tmp/deploy"  # Carpeta temporal en servidor principal
+
+      # Paso 3: Copiar desde servidor principal a la VM interna
+      - name: Copiar archivos a la VM interna
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          SSH_VM_PASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_VM_USER: ${{ secrets.SSH_USER }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          envs: SSH_VM_PASS,SSH_VM_USER
           script: |
-            # Conectar a la VM interna y ejecutar comandos
+            # Copiar archivos a la VM interna usando scp
+            /usr/bin/sshpass -p "$SSH_VM_PASS" scp -o StrictHostKeyChecking=no -r /tmp/deploy/* $SSH_VM_USER@192.168.1.21:/home/aziende/web/dev.aziende.us/public_html/
+
+            # Verificar en la VM
             /usr/bin/sshpass -p "$SSH_VM_PASS" ssh -o StrictHostKeyChecking=no $SSH_VM_USER@192.168.1.21 << 'EOF'
-              cd /home/aziende/web/dev.aziende.us/public_html
-              FECHA=$(date '+%Y-%m-%d_%H-%M-%S')
-              echo "Archivo creado en: $(date)" > test_$FECHA.txt
-              echo "✓ Archivo creado: test_$FECHA.txt"
-              ls -la
+              echo "✓ Deploy completado: $(date)"
+              ls -la /home/aziende/web/dev.aziende.us/public_html/
             EOF
+
+            # Limpiar archivos temporales
+            rm -rf /tmp/deploy
