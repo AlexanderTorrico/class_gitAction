@@ -30,15 +30,16 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         env:
           SSH_VM_PASS: ${{ secrets.SSH_PASSWORD }}  # Contraseña para la VM
+          SSH_VM_USER: ${{ secrets.SSH_USER }}      # Usuario para la VM
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
-          envs: SSH_VM_PASS  # Pasa la variable al servidor
+          envs: SSH_VM_PASS,SSH_VM_USER  # Pasa las variables al servidor
           script: |
             # Conectar a la VM interna y ejecutar comandos
-            /usr/bin/sshpass -p "$SSH_VM_PASS" ssh -o StrictHostKeyChecking=no merx@192.168.1.21 << 'EOF'
+            /usr/bin/sshpass -p "$SSH_VM_PASS" ssh -o StrictHostKeyChecking=no $SSH_VM_USER@192.168.1.21 << 'EOF'
               cd /home/aziende/web/dev.aziende.us/public_html
               FECHA=$(date '+%Y-%m-%d_%H-%M-%S')
               echo "Archivo creado en: $(date)" > test_$FECHA.txt
