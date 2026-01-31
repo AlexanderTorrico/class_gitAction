@@ -20,7 +20,7 @@ jobs:
 
       # PASO 2: Copiar archivos desde GitHub al servidor via SCP (SSH Copy)
       - name: Copiar archivos al servidor
-        uses: appleboy/scp-action@v0.1.7  # Acción de terceros para transferir archivos
+        uses: appleboy/scp-action@master  # Última versión
         with:
           host: ${{ secrets.SSH_HOST }}      # IP o dominio del servidor (desde Secrets)
           port: ${{ secrets.SSH_PORT }}      # Puerto SSH (normalmente 22)
@@ -29,7 +29,8 @@ jobs:
           source: "index.html,script.js,styles.css,procesos/"  # Archivos a copiar
           target: "/home/aziende/web/dev.aziende.us/public_html"  # Destino en el servidor
           overwrite: true  # Sobrescribir archivos existentes
-          debug: true  # Mostrar información de debug para ver el error
+          strip_components: 0  # No quitar componentes del path
+          debug: true
 
       # PASO 3: Conectarse por SSH y ejecutar comandos para verificar el deploy
       - name: Confirmar deploy
