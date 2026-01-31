@@ -1,45 +1,33 @@
-# Nombre del workflow (aparece en la pestaña Actions de GitHub)
-name: Deploy a servidor
+# Workflow de prueba - Crear archivo con fecha y hora
+name: Test - Crear archivo
 
-# Eventos que disparan el workflow
 on:
-  workflow_dispatch:  # Permite ejecutar manualmente desde GitHub Actions
-  push:
-    branches: [ main ]  # Se ejecuta automáticamente cuando hay push a main
+  workflow_dispatch:  # Solo manual para pruebas
 
-# Definición de los trabajos a ejecutar
 jobs:
-  deploy:  # Nombre del job
-    runs-on: ubuntu-latest  # Máquina virtual donde se ejecuta (Ubuntu)
+  test:
+    runs-on: ubuntu-latest
 
-    # Pasos secuenciales del deploy
     steps:
-      # PASO 1: Descargar el código del repositorio a la máquina virtual
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4  # Acción oficial de GitHub para clonar el repo
-
-      # PASO 2: Copiar archivos desde GitHub al servidor via SCP (SSH Copy)
-      - name: Copiar archivos al servidor
-        uses: appleboy/scp-action@master  # Última versión
-        with:
-          host: ${{ secrets.SSH_HOST }}      # IP o dominio del servidor (desde Secrets)
-          port: ${{ secrets.SSH_PORT }}      # Puerto SSH (normalmente 22)
-          username: ${{ secrets.SSH_USER }}  # Usuario SSH para conectarse
-          password: ${{ secrets.SSH_PASSWORD }}  # Contraseña del usuario SSH
-          source: "index.html,script.js,styles.css,procesos/"  # Archivos a copiar
-          target: "/home/aziende/web/dev.aziende.us/public_html"  # Destino en el servidor
-          overwrite: true  # Sobrescribir archivos existentes
-          strip_components: 0  # No quitar componentes del path
-          debug: true
-
-      # PASO 3: Conectarse por SSH y ejecutar comandos para verificar el deploy
-      - name: Confirmar deploy
-        uses: appleboy/ssh-action@v1.2.0  # Acción para ejecutar comandos SSH
+      - name: Crear archivo con fecha y hora
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
-          script: |  # Comandos bash a ejecutar en el servidor
-            echo "Deploy completado: $(date)"  # Muestra fecha/hora del deploy
-            ls -la /home/aziende/web/dev.aziende.us/public_html  # Lista los archivos
+          script: |
+            echo "=== Servidor principal ==="
+            echo "Usuario: $(whoami)"
+            echo "Conectando a VM 192.168.1.21..."
+            sshpass -p '${{ secrets.SSH_PASSWORD }}' ssh -o StrictHostKeyChecking=no merx@192.168.1.21 << 'EOF'
+              echo "=== VM Interna ==="
+              echo "Usuario: $(whoami)"
+              cd /home/aziende/web/dev.aziende.us/public_html
+              echo "Directorio: $(pwd)"
+              FECHA=$(date '+%Y-%m-%d_%H-%M-%S')
+              touch test_$FECHA.txt
+              echo "Archivo creado en: $(date)" > test_$FECHA.txt
+              echo "Archivo creado: test_$FECHA.txt"
+              ls -la
+            EOF
