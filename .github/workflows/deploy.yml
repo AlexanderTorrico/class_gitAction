@@ -19,5 +19,5 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
             FECHA=$(date '+%Y-%m-%d_%H-%M-%S')
-            touch "/home/${USER}/test/archivo_$FECHA.txt"
+            touch "/home/merx/test/archivo_$FECHA.txt"
             echo "Archivo creado: archivo_$FECHA.txt"
