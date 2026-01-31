@@ -3,6 +3,8 @@ name: Test - Crear archivo
 
 on:
   workflow_dispatch:  # Solo manual para pruebas
+  push:
+    branches: [ "main" ]
 
 jobs:
   test:
