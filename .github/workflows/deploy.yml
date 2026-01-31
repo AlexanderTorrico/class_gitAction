@@ -16,7 +16,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PASSWORD }}
+          password: ${{ secrets.SSH_PASSWORD }}
           script: |
             FECHA=$(date '+%Y-%m-%d_%H-%M-%S')
             touch "/home/${USER}/test/archivo_$FECHA.txt"
