@@ -1,23 +1,42 @@
-name: Crear archivo con fecha y hora en servidor
+# Nombre del workflow (aparece en la pestaña Actions de GitHub)
+name: Deploy a servidor
 
+# Eventos que disparan el workflow
 on:
-  workflow_dispatch:  # Manual
+  workflow_dispatch:  # Permite ejecutar manualmente desde GitHub Actions
   push:
-    branches: [ main ]  # O la rama que tú quieras
+    branches: [ main ]  # Se ejecuta automáticamente cuando hay push a main
 
+# Definición de los trabajos a ejecutar
 jobs:
-  crear-archivo:
-    runs-on: ubuntu-latest
+  deploy:  # Nombre del job
+    runs-on: ubuntu-latest  # Máquina virtual donde se ejecuta (Ubuntu)
 
+    # Pasos secuenciales del deploy
     steps:
-      - name: Ejecutar comando SSH para crear archivo con fecha y hora
-        uses: appleboy/ssh-action@v1.2.0
+      # PASO 1: Descargar el código del repositorio a la máquina virtual
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4  # Acción oficial de GitHub para clonar el repo
+
+      # PASO 2: Copiar archivos desde GitHub al servidor via SCP (SSH Copy)
+      - name: Copiar archivos al servidor
+        uses: appleboy/scp-action@v0.1.7  # Acción de terceros para transferir archivos
+        with:
+          host: ${{ secrets.SSH_HOST }}      # IP o dominio del servidor (desde Secrets)
+          port: ${{ secrets.SSH_PORT }}      # Puerto SSH (normalmente 22)
+          username: ${{ secrets.SSH_USER }}  # Usuario SSH para conectarse
+          password: ${{ secrets.SSH_PASSWORD }}  # Contraseña del usuario SSH
+          source: "index.html,script.js,styles.css,procesos/"  # Archivos a copiar
+          target: "/home/aziende/web/dev.aziende.us/public_html"  # Destino en el servidor
+
+      # PASO 3: Conectarse por SSH y ejecutar comandos para verificar el deploy
+      - name: Confirmar deploy
+        uses: appleboy/ssh-action@v1.2.0  # Acción para ejecutar comandos SSH
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
-          script: |
-            FECHA=$(date '+%Y-%m-%d_%H-%M-%S')
-            touch "/home/merx/test/archivo_$FECHA.txt"
-            echo "Archivo creado: archivo_$FECHA.txt"
+          script: |  # Comandos bash a ejecutar en el servidor
+            echo "Deploy completado: $(date)"  # Muestra fecha/hora del deploy
+            ls -la /home/aziende/web/dev.aziende.us/public_html  # Lista los archivos
