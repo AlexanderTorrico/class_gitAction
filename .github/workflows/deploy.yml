@@ -2,10 +2,10 @@
 name: Test - Crear archivo
 
 on:
-  workflow_dispatch:  # Solo manual para pruebas
   push:
     branches: [ "main" ]
-
+  workflow_dispatch:  # Solo manual para pruebas
+  
 jobs:
   test:
     runs-on: ubuntu-latest
