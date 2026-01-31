@@ -28,6 +28,8 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}  # Contraseña del usuario SSH
           source: "index.html,script.js,styles.css,procesos/"  # Archivos a copiar
           target: "/home/aziende/web/dev.aziende.us/public_html"  # Destino en el servidor
+          overwrite: true  # Sobrescribir archivos existentes
+          debug: true  # Mostrar información de debug para ver el error
 
       # PASO 3: Conectarse por SSH y ejecutar comandos para verificar el deploy
       - name: Confirmar deploy
