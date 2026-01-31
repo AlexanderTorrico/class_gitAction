@@ -13,16 +13,19 @@ jobs:
     steps:
       - name: Crear archivo con fecha y hora
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          SSH_VM_PASS: ${{ secrets.SSH_PASSWORD }}
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
+          envs: SSH_VM_PASS
           script: |
             echo "=== Servidor principal ==="
             echo "Usuario: $(whoami)"
             echo "Conectando a VM 192.168.1.21..."
-            ssh merx@192.168.1.21 << 'EOF'
+            sshpass -p "$SSH_VM_PASS" ssh -o StrictHostKeyChecking=no merx@192.168.1.21 << 'EOF'
               echo "=== VM Interna ==="
               echo "Usuario: $(whoami)"
               cd /home/aziende/web/dev.aziende.us/public_html
