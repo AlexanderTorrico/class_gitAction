@@ -57,15 +57,25 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           envs: SSH_VM_PASS,SSH_VM_USER
+          # =========================================================
+          # SCRIPT: Copiar archivos a la VM interna
+          # =========================================================
+          # PASO 3A: sshpass + scp → Copiar archivos a la VM
+          #   - sshpass: envía contraseña automáticamente
+          #   - scp -r: copia recursiva de archivos
+          #   - /tmp/deploy/* → origen (servidor principal)
+          #   - usuario@ip:/ruta → destino (VM)
+          #
+          # PASO 3B: sshpass + ssh + heredoc → Verificar deploy
+          #   - Conecta a la VM y ejecuta comandos
+          #   - Muestra fecha y lista archivos
+          #
+          # PASO 3C: rm -rf → Limpia archivos temporales
+          # =========================================================
           script: |
-            # Copiar archivos a la VM interna usando scp
             /usr/bin/sshpass -p "$SSH_VM_PASS" scp -o StrictHostKeyChecking=no -r /tmp/deploy/* $SSH_VM_USER@192.168.1.21:/home/aziende/web/dev.aziende.us/public_html/
-
-            # Verificar en la VM
             /usr/bin/sshpass -p "$SSH_VM_PASS" ssh -o StrictHostKeyChecking=no $SSH_VM_USER@192.168.1.21 << 'EOF'
               echo "✓ Deploy completado: $(date)"
               ls -la /home/aziende/web/dev.aziende.us/public_html/
             EOF
-
-            # Limpiar archivos temporales
             rm -rf /tmp/deploy
