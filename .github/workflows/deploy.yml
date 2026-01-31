@@ -25,7 +25,7 @@ jobs:
             echo "=== Servidor principal ==="
             echo "Usuario: $(whoami)"
             echo "Conectando a VM 192.168.1.21..."
-            sshpass -p "$SSH_VM_PASS" ssh -o StrictHostKeyChecking=no merx@192.168.1.21 << 'EOF'
+            /usr/bin/sshpass -p "$SSH_VM_PASS" ssh -o StrictHostKeyChecking=no merx@192.168.1.21 << 'EOF'
               echo "=== VM Interna ==="
               echo "Usuario: $(whoami)"
               cd /home/aziende/web/dev.aziende.us/public_html
