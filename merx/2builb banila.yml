@@ -1,0 +1,81 @@
+# =============================================================================
+# WORKFLOW: Deploy de archivos a servidor
+# =============================================================================
+# Este workflow copia los archivos del repositorio a una VM interna.
+#
+# Arquitectura de conexión:
+#   GitHub Actions → Servidor Principal (SSH_HOST) → VM (192.168.1.21)
+#
+# Flujo:
+#   1. Checkout del repositorio
+#   2. Copiar archivos al servidor principal via SCP
+#   3. Desde el servidor principal, copiar a la VM interna
+#
+# Secrets requeridos:
+#   - SSH_HOST: IP o dominio del servidor principal
+#   - SSH_PORT: Puerto SSH (normalmente 22)
+#   - SSH_USER: Usuario para conectarse
+#   - SSH_PASSWORD: Contraseña del usuario
+# =============================================================================
+
+name: Deploy a servidor
+
+on:
+  push:
+    branches: [ "main" ]  # Se ejecuta en push a main
+  workflow_dispatch:       # Permite ejecución manual
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Paso 1: Descargar el código del repositorio
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # Paso 2: Copiar archivos al servidor principal
+      - name: Copiar archivos al servidor principal
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "index.html,script.js,styles.css,procesos/"
+          target: "/tmp/deploy"  # Carpeta temporal en servidor principal
+
+      # Paso 3: Copiar desde servidor principal a la VM interna
+      - name: Copiar archivos a la VM interna
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          SSH_VM_PASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_VM_USER: ${{ secrets.SSH_USER }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          envs: SSH_VM_PASS,SSH_VM_USER
+          # =========================================================
+          # SCRIPT: Copiar archivos a la VM interna
+          # =========================================================
+          # PASO 3A: sshpass + scp → Copiar archivos a la VM
+          #   - sshpass: envía contraseña automáticamente
+          #   - scp -r: copia recursiva de archivos
+          #   - /tmp/deploy/* → origen (servidor principal)
+          #   - usuario@ip:/ruta → destino (VM)
+          #
+          # PASO 3B: sshpass + ssh + heredoc → Verificar deploy
+          #   - Conecta a la VM y ejecuta comandos
+          #   - Muestra fecha y lista archivos
+          #
+          # PASO 3C: rm -rf → Limpia archivos temporales
+          # =========================================================
+          script: |
+            /usr/bin/sshpass -p "$SSH_VM_PASS" scp -o StrictHostKeyChecking=no -r /tmp/deploy/* $SSH_VM_USER@192.168.1.21:/home/aziende/web/dev.aziende.us/public_html/
+            /usr/bin/sshpass -p "$SSH_VM_PASS" ssh -o StrictHostKeyChecking=no $SSH_VM_USER@192.168.1.21 << 'EOF'
+              echo "✓ Deploy completado: $(date)"
+              ls -la /home/aziende/web/dev.aziende.us/public_html/
+            EOF
+            rm -rf /tmp/deploy
